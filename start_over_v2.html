@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Website ArcGIS Map</title>
+
+        <!-- Base URL for GitHub Pages -->
+        <base href="./">
+        
+        <style>
+         html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Map view - styling */
+        #viewDiv {
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* Map Title Box - Title & Styling */
+        #mapTitle {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 100;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            font-size: 16px;
+            font-weight: bold;
+            text-align: left;
+            width: 250px; /* Match the width of #sidebar */
+            display: flex;
+            flex-direction: column; /* Stack title and subtitle */
+        }
+        /* Map Title Box - Subtitle & Styling */
+        #mapTitle span {
+            font-size: 13px;
+            font-weight: normal;
+            color: gray; /* Lighter color */
+            margin-top: 4px; /* Space between title and subtitle */
+        }
+
+        /* Sidebar + Hides Appear when toggled */
+        #sidebar {
+            width: 250px;
+            padding: 15px;
+            background: white;
+            color: rgb(5, 5, 5);
+            box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            position: absolute;
+            left: 15px;
+            top: 100px;
+            z-index: 100;
+            border-radius: 8px;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+
+            /* Make sidebar content structured */
+            display: flex;
+            flex-direction: column;
+        }
+        /* Sidebar - Title styling: Centered and properly spaced */
+        #sidebar h3 {
+            text-align: left;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 0 10px 0; /* Add space below the title */
+        }
+        /* Sidebar - Fully hide sidebar */
+        .hidden {
+            transform: translateX(-300px); /* Moves sidebar fully out */
+            opacity: 0; /* Hides the content */
+            visibility: hidden; /* Ensures it doesn’t block clicks */
+        }
+
+        /* Sidebar - toggle button - cirlce button */
+        /* #toggleSidebar {
+            position: absolute;
+            top: 90px;
+            left: 280px; /* Default position inside sidebar 
+            z-index: 110;
+            background: #0a0f0f;
+            width: 35px;
+            height: 35px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: left 0.3s ease-in-out;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        } */
+
+        /* Sidebar - toggle button - rectangle button */
+        #toggleSidebar {
+            position: absolute;
+            top: 105px; /* Y Position */
+            left: 280px; /* X Position inside sidebar */
+            z-index: 110;
+            background: rgb(14, 14, 14); /* Match sidebar */
+            color: #a5bab6; /* Dark green like your reference */
+            width: 30px; /* Narrower width */
+            height: 43px; /* Taller height */
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px 0 0 5px; /* Rounded left corners only */
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            -webkit-print-color-adjust: exact; /* For print map purpose - color still appear */
+            print-color-adjust: exact; /* For print map purpose - color still appear */
+        }
+        /* Sidebar - Hide Toggle - Hover Effect */
+        #toggleSidebar:hover {
+            background: #7a7a7a; /* Changes to grey */
+            transform: scale(0.95); /* Slight shrink effect */
+        }
+        /* Sidebar - Adjust button when sidebar is hidden */
+        .hidden + #toggleSidebar {
+            left: 15px; /* Moves button to the left when sidebar is closed */
+        }
+        /* Sidebar - ButtonArrow icon style using an SVG */
+        #toggleSidebar svg {
+            width: 20px;
+            height: 20px;
+            fill: white !important;; /* Arrow color */
+        }
+        /* Sidebar - Print Map - Ensure all styles remain for better print rendering */
+        body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        }
+        /* Sidebar - Layer Item */
+        .layer-item {
+            background: #d3efd9;
+            color: rgb(3, 3, 3);  /* Text layer item color */
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column; /* Ensure content stacks properly */
+            gap: 4px; /* Reduce spacing between title and description */
+        }
+        /* Sidebar - Layer Name Row (for title and toggle button) */
+        .layer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        /* Sidebar - Title Styling */
+        .layer-title {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        /* Sidebar - Description Below Layer Name */
+        .layer-description {
+            font-size: 12px;
+            color: #555;
+            margin: 2px 0 0 0; /* Reduce top margin */
+            line-height: 1.2; /* Adjust line spacing */
+        }
+        /* Sidebar - position for toggle button */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 18px;
+        }
+        /* Sidebar - toggle button styling*/
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        /* Sidebar - slider button styling*/
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #908d8d;
+            transition: .4s;
+            border-radius: 18px;
+        }
+        /* Sidebar - slider before button styling*/
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        /* Sidebar - slider button styling*/
+        input:checked + .slider {
+            background-color: #070707;
+        }
+        /* Sidebar - slider before button styling*/
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        /* Year Slider - Container */
+        .year-slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        /* Year Slider - Title (Year label on the left) */
+        .year-labels {
+            display: flex;
+            justify-content: flex-start; /* ✅ Aligns "Year" to the left */
+            font-size: 14px;
+            /* font-weight: bold; */
+            margin-top: 3px;
+            width: 100%;
+        }
+
+        /* Year Title Styling */
+        .year-title {
+            text-align: left; /* ✅ Ensure "Year" is aligned to the left */
+            font-weight: bold; /* Normal for "no bold" */
+            flex: none; /* ✅ Ensure it doesn't stretch */
+            margin-right: 10px; /* ✅ Add space after "Year" */
+        }
+
+        /* Selected Year Styling 
+        .year-value {
+            flex: 1;
+            text-align: right; Align selected year to the right 
+            font-weight: bold;
+        } */
+
+        /* Year Slider Styling */
+        #yearSlider {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            background: #ccc;
+            border-radius: 5px;
+            outline: none;
+            transition: 0.3s;
+            margin-top: 5px;
+        }
+
+        /* Year Slider - Knob */
+        #yearSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        /* Year Ticks (2021, 2022, 2023 below the slider) */
+        .year-ticks {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 12px;
+            /* font-weight: bold; */
+            margin-top: 3px;
+        }
+        /* #selectedYear {
+            font-size: 14px;
+            text-align: center; /* Center the text 
+            font-weight: bold;
+            margin-bottom: 5px; /* Adjust spacing 
+            margin-top: 0; Remove extra space
+        } */
+
+        /* Measurement Tools */
+        #measurementTools{
+            position: absolute;
+            bottom: 250px;
+            left: 17px;
+            height: 100px;
+            width: 260px;
+            z-index: 100;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+            #measurementTools span{
+                font-size: 15px;
+                font-weight: normal;
+                color: grey;
+            }
+
+            #buttonContainer {
+                display: flex;
+                justify-content: space-around;
+                margin-top: 15px;
+            }
+
+            /* Button Hover */
+            #buttonContainer button:hover {
+                transform: scale(1.35); /* ✅ Slight Zoom Effect */
+            }
+
+            /* Toggle Measurement Button */
+            #toggleMeasurement {
+                position: absolute;
+                bottom: 320px; /* Align with measurement box */
+                left: 280px; /* Place near measurement box */
+                z-index: 110;
+                background: black; /* Dark background */
+                color: white;
+                width: 30px;
+                height: 43px;
+                border: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: all 0.3s ease-in-out;
+                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            }
+
+            /* Hover Effect */
+            #toggleMeasurement:hover {
+                background: grey;
+                transform: scale(0.95);
+            }
+
+            /* Move Button When Measurement Tools Are Hidden */
+            .hidden + #toggleMeasurement {
+                left: 15px; /* Move button when measurement box is hidden */
+            }
+
+            /* Toggle Button Icon */
+            #toggleMeasurement svg {
+                width: 20px;
+                height: 20px;
+                fill: white !important;
+            }
+        
+        
+    
+        
+        /* Basemap - Selector Panel */
+        #basemapContainer {
+            position: absolute;
+            bottom: 25px;
+            left: 15px; /* change the position of legend in the interface (left: xx / right: xx) */
+            height: 85px;
+            width: 260px;
+            z-index: 100;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: row; /* change the basemap in vertical (column) or in horizontal (row) */
+            align-items: center;
+            gap: 8px;
+        }
+        /* Basemap - Title */
+        #basemapTitle {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        /* Basemap - Buttons Container */
+        #basemapOptions {
+            display: flex;
+            gap: 8px;
+        }
+        /* Basemap - Style for each basemap item (image + text) */
+        .basemapItem {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        /* Basemap - Thumbnails */
+        .basemapOption {
+            width: 45px;
+            height: 40px;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid transparent;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.2s ease-in-out, border 0.2s ease-in-out;
+            display: block; /* Ensure hover effect applies */
+        }
+        /* Basemap - Text Label */
+        .basemapLabel {
+            font-size: 12px;
+            color: black;
+            text-align: center;
+            font-weight: normal; /* Fix: properly closed comment */
+        }
+        /* Basemap - Hover Effect - Enlarges slightly */
+        .basemapOption:hover {
+            transform: scale(1.1);
+            border: 2px solid rgba(0, 0, 0, 0.5);
+        }
+        /* Basemap - Selected Basemap Highlight */
+        .selected {
+            border: 3px solid rgb(194, 21, 213);
+            box-shadow: 0px 0px 8px rgba(194, 21, 213, 0.5);
+        }
+
+        /* Legend - Floating Styling */
+        #legendContainer {
+            position: absolute;
+            bottom: 115px;
+            right: 15px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            width: 170px;
+            display: none; /* ✅ Initially hidden */
+        }
+        /* Legend Title */
+        #legendTitle {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        /* Print Map - Button Inside Legend */
+        #legendContainer button {
+            display: block;
+            margin: 10px auto; /* Centers the button */
+            width: auto; /* Adjusts to the button size */
+            width: 80%; /* Make button fit legend width */
+            padding: 5px 8px; /* Less padding */
+            margin-top: 5px; /* Less space above */
+            font-size: 12px; /* Smaller font */
+            height: 30px; /* Reduce button height */
+            cursor: pointer;
+            border: none;
+            background: #4caf50; /* Green color */
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+        }
+        /* Print Map - Button Hover - Legend */
+        #legendContainer button:hover {
+            background: #3bdc79; /* ✅ Lighter Green */
+            transform: scale(0.95); /* ✅ Slight Zoom Effect */
+        }
+        /* Print Map - Watermark Styling - Ensures it doesn’t create a white box */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            color: rgba(0, 0, 0, 0.2);
+            font-size: 48px;
+            font-weight: bold;
+            text-transform: uppercase;
+            z-index: 9999;
+            pointer-events: none;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        /* Print Map - Options to choose the color and basemap still appear */
+        @media print {
+        /* Ensure the green background of the layer items is included */
+        .layer-item {
+            background: #d3efd9 !important; /* Force background */
+            -webkit-print-color-adjust: exact; /* For WebKit browsers */
+            print-color-adjust: exact; /* Ensures colors are printed */
+        }
+        /* Print Map - Hide the toggle sidebar button during print */
+        #toggleSidebar {
+        display: none !important; /* ✅ This will hide the button only in print mode */
+        }
+        /* Print Map - Hide the search location during print */
+        .esri-search {
+            display: none !important; /* ✅ Hides the search bar */
+        }
+        /* Print Map - Hide the zoom controls button during print */
+        .esri-ui-top-right .esri-zoom {
+            display: none !important;
+        }
+        /* Print Map - Hide the my location button during print */
+        .esri-ui-top-right .esri-component.esri-locate {
+            display: none !important;
+        }
+        /* Print Map - Hide the print map button during print */
+        #printMapBtn {
+            display: none !important;
+        }
+        /* Print Map - Hide the basemap button during print */
+        #basemapContainer{
+        display: none !important; /* ✅ This will hide the button only in print mode */
+        }
+        
+    }
+
+        </style>
+
+    <!-- ArcGIS API for JavaScript -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.29/"></script>
+
+    </head>
+    <body>
+
+    <!-- Title for the Web GIS -->
+    <div id="mapTitle">
+        WEB GIS Map <br>
+        <span>(developed by Geo Science)</span>
+    </div>   
+
+   <!-- Measurement Tools -->
+    <div id="measurementTools">
+        <p> Measurement <span> Tools</span></p>
+        <div id="buttonContainer"></div> <!-- ✅ Placeholder for Distance & Area buttons -->
+    </div>
+
+    <!-- Toggle Button -->
+    <button id="toggleMeasurement">
+        <svg viewBox="0 0 24 24">
+            <path d="M8.59 16.58L13.17 12l-4.58-4.58L10 6l6 6-6 6z"/>
+        </svg>
+    </button>
+    
+    <!-- Sidebar + toggle button -->
+    <div id="sidebar">
+        <h3>List of Layers</h3>
+
+        <!-- First Layer -->
+        <div class="layer-item">
+            <div class="layer-row">
+                <span class="layer-title">PDRB of Jawa Barat</span>
+                <label class="switch">
+                    <input type="checkbox" id="toggleLayer1" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <p class="layer-description">Represents the economic data of West Java, showing GDP distribution.</p> <!-- Description -->
+            
+            <!-- ✅ Year Slider Inside PDRB Jawa Barat -->
+            <!-- <div class="year-slider-container">
+                <input type="range" id="yearSlider" min="2021" max="2023" step="1" value="2023">
+                <p id="selectedYear">Year: <span id="yearValue">2023</span></p> -->
+            
+            <!-- ✅ Year Slider Inside PDRB Jawa Barat -->
+            <div class="year-slider-container">
+                <div class="year-labels">
+                    <span class="year-title">Year:</span> <!-- ✅ "Year" text moved to the left -->
+                </div>
+                <input type="range" id="yearSlider" min="2021" max="2023" step="1" value="2023">
+                <div class="year-ticks">
+                    <span>2021</span>
+                    <span>2022</span>
+                    <span>2023</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Layer -->
+        <div class="layer-item">
+            <div class="layer-row">
+                <span class="layer-title">Boundary of Jawa Barat</span>
+                <label class="switch">
+                    <input type="checkbox" id="toggleLayer2" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <p class="layer-description">Shows the administrative boundaries of West Java, including provinces and cities.</p> <!-- Description -->
+        </div>
+    </div>
+    <button id="toggleSidebar">
+        <!-- SVG Arrow (Matches Your Image) -->
+        <svg viewBox="0 0 24 24">
+            <path d="M15.41 16.58L10.83 12l4.58-4.58L14 6l-6 6 6 6z"/>
+        </svg>
+    </button>
+
+    
+
+    <!-- Basemap - Thumbnails -->
+    <div id="basemapContainer">
+        <div id="basemapTitle">Basemap</div>
+        <div id="basemapOptions">
+            <div class="basemapItem">
+                <div class="basemapOption selected" data-basemap="topo" style="background-image: url('images/topo.jpg');"></div>
+                <span class="basemapLabel">Topography</span>
+            </div>
+            <div class="basemapItem">
+                <div class="basemapOption" data-basemap="satellite" style="background-image: url('images/satellite.jpg');"></div>
+                <span class="basemapLabel">Satellite</span>
+            </div>
+            <div class="basemapItem">
+                <div class="basemapOption" data-basemap="streets" style="background-image: url('images/streets.jpg');"></div>
+                <span class="basemapLabel">Streets</span>
+            </div>
+            <!-- <div class="basemapItem">
+                <div class="basemapOption" data-basemap="gray" style="background-image: url('images/gray.jpg');"></div>
+                <span class="basemapLabel">Gray</span>
+            </div> -->
+        </div>
+    </div>
+
+    <!-- Legend - Floating Legend
+    <div id="legendContainer">
+        <div id="legendTitle">Legend</div>
+        <div id="legendDiv"></div>
+    </div> -->
+
+    <!-- ✅ Legend Box with Print Button Inside -->
+    <div id="legendContainer" class="tooltip" data-tooltip="View Map Legend">
+        <div id="legendTitle">Legend</div>
+        <div id="legendDiv"></div>
+
+    <!-- ✅ Print Button -->
+        <button id="printMapBtn" class="tooltip" data-tooltip="Print Map">🖨 Print Map</button>
+    </div>
+    
+    <!-- Map Container -->
+    <div id="viewDiv"></div>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/widgets/Search",
+            "esri/widgets/Locate",
+            "esri/layers/FeatureLayer",
+            "esri/widgets/Legend",
+            "esri/widgets/Home",
+            "esri/widgets/Fullscreen",
+            "esri/widgets/CoordinateConversion",
+            "esri/widgets/Measurement",
+            "esri/Graphic"
+        ], function(Map, MapView, Search, Locate, FeatureLayer, Legend, Home, Fullscreen, CoordinateConversion, Measurement, Graphic) {
+
+    // Create the map
+    // var map = new Map({ basemap: "streets" });
+    var map = new Map({ basemap: "topo" });  // ✅ Default is now Topography
+    
+    // Create the map view to display the map
+    var view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [106.886666, -6.500000], // Default to Jakarta
+        zoom: 9.5
+    });
+    // Feature Layer - (Boundary Jawa Barat - first)
+    var featureLayer2 = new FeatureLayer({
+            url: "https://services7.arcgis.com/i7oBcCa8FAftmlWc/arcgis/rest/services/Batas_Administrasi_Jawa_Barat/FeatureServer",
+            visible: true,
+            title: "Boundary Jawa Barat",
+            outFields: ["*"], // Ensure all attributes are accessible
+            popupTemplate: {  // Enable attribute popups
+                title: "District: {district}", // Display the district name as title
+                content: `
+                <b>Province:</b> {provinsi} <br> 
+                <b>District:</b> {district} <br>
+                `
+            }
+        });
+        map.add(featureLayer2); // Add Boundary Jawa Barat first
+
+    // Feature Layer -  (PDRB Jawa Barat - second)
+    // var featureLayer1 = new FeatureLayer({
+    //     url: "https://services7.arcgis.com/i7oBcCa8FAftmlWc/arcgis/rest/services/PDRB_JawaBarat/FeatureServer/0",
+    //     visible: true,
+    //     title: "PDRB Jawa Barat",
+    //     outFields: ["*"], // Ensure all attributes are accessible
+    //     popupTemplate: {  // Enable attribute popups
+    //         title: "District: {district}", // Display the district name as title
+    //         content: `
+    //         <b>Province:</b> {provinsi} <br> 
+    //         <b>District:</b> {district} <br>
+    //         <b>PDRB: </b> Rp {PDRB} Triliun <br>
+    //         `
+    //     }
+    // });
+    // map.add(featureLayer1); // Add PDRB Jawa Barat last
+
+    // ✅ Define popup template for PDRB Jawa Barat (applies to all years)
+    function getPdrbPopupTemplate(year) {
+        return {
+            title: `PDRB Jawa Barat (${year})`,
+            content: `
+                <b>Province:</b> {provinsi} <br> 
+                <b>District:</b> {district} <br>
+                <b>PDRB:</b> Rp {PDRB} Triliun <br>
+            `
+        };
+    }
+
+    // ✅ 2️⃣ Define PDRB Layers for Different Years
+    let pdrbLayers = {
+        "2021": new FeatureLayer({
+            url: "https://services7.arcgis.com/i7oBcCa8FAftmlWc/arcgis/rest/services/PDRB_JawaBarat2021_Dummy_Data/FeatureServer",
+            visible: false, // Initially hidden
+            title: "PDRB Jawa Barat 2021",
+            outFields: ["*"],
+            popupTemplate: getPdrbPopupTemplate(2021) // ✅ Popup added
+        }),
+        "2022": new FeatureLayer({
+            url: "https://services7.arcgis.com/i7oBcCa8FAftmlWc/arcgis/rest/services/PDRB_JawaBarat_2022_DummyData/FeatureServer",
+            visible: false, // Initially hidden
+            title: "PDRB Jawa Barat 2022",
+            outFields: ["*"],
+            popupTemplate: getPdrbPopupTemplate(2022) // ✅ Popup added
+        }),
+        "2023": new FeatureLayer({
+            url: "https://services7.arcgis.com/i7oBcCa8FAftmlWc/arcgis/rest/services/PDRB_JawaBarat/FeatureServer/0",
+            visible: true, // ✅ Default year is 2023
+            title: "PDRB Jawa Barat 2023",
+            outFields: ["*"],
+            popupTemplate: getPdrbPopupTemplate(2023) // ✅ Popup added
+        })
+    };
+
+    // ✅ 2️⃣ Add All Layers to the Map
+    Object.values(pdrbLayers).forEach(layer => map.add(layer));
+
+    // ✅ 3️⃣ Toggle button logic to hide/show all PDRB layers
+    document.getElementById("toggleLayer1").addEventListener("change", function (e) {
+        let isChecked = e.target.checked;
+        let selectedYear = document.getElementById("yearSlider").value; // ✅ Get selected year
+
+        // ✅ Hide all layers first
+        Object.keys(pdrbLayers).forEach(year => {
+            pdrbLayers[year].visible = false;
+        });
+
+        // ✅ Show only the selected year layer if toggle is ON
+        if (isChecked) {
+            pdrbLayers[selectedYear].visible = true;
+        }
+
+        // ✅ Update legend dynamically
+        updateLegend(selectedYear);
+    });
+
+    // ✅ 4️⃣ Year slider logic to switch PDRB layers
+    document.getElementById("yearSlider").addEventListener("input", function () {
+        let selectedYear = this.value;
+        let isChecked = document.getElementById("toggleLayer1").checked; // ✅ Get toggle state
+
+        // ✅ Hide all layers first
+        Object.keys(pdrbLayers).forEach(year => {
+            pdrbLayers[year].visible = false;
+        });
+
+        // ✅ Show only the selected year layer if toggle is ON
+        if (isChecked) {
+            pdrbLayers[selectedYear].visible = true;
+        }
+
+        // ✅ Update legend dynamically
+        updateLegend(selectedYear);
+
+    });
+    
+
+    // Feature Layer - Toggle Visibility for First Layer (PDRB Jawa Barat)
+    // document.getElementById("toggleLayer1").addEventListener("change", function(e) {
+    //      featureLayer1.visible = e.target.checked;  // Checked: Ensure visibility is updated correctly
+    // });
+
+    // Feature Layer - Toggle Visibility for First Layer (Boundary Jawa Barat)
+    document.getElementById("toggleLayer2").addEventListener("change", function(e) {
+         featureLayer2.visible = e.target.checked;  // Checked: Ensure visibility is updated correctly
+    });
+
+
+    // 1️. Widget - Search Widget - (🔍 Find Places) at Top
+    var searchWidget = new Search({ view: view });
+    view.ui.add(searchWidget, { position: "top-right", index: 0 }); // ✅ Ensures Search is at the top
+
+
+    // 2. Zoom Controls - Below Locate Search Widget
+    view.ui.move("zoom", "top-right");
+    view.ui.add("zoom", { position: "top-right", index: 1 }); // ✅ Ensures Zoom is below the search
+
+
+    // 3. Widget -  My Location - (📍 My Location) Below Search
+    var locateWidget = new Locate({ view: view });
+    view.ui.add(locateWidget, { position: "top-right", index: 2 }); // ✅ Ensures Locate is at the bottom
+
+        // My Location - Ensure "My Location" Event Works Correctly
+        locateWidget.on("locate", function(event) {
+            var coords = event.position.coords;
+            addMarker(coords.longitude, coords.latitude, "red", "Your Location");
+        });
+
+        // My location - Function to create a marker/ attribute long lat
+        function addMarker(longitude, latitude, color, title) {
+            var marker = new Graphic({
+                geometry: { type: "point", longitude, latitude },
+                symbol: { type: "simple-marker", color, outline: { color: "white", width: 2 } },
+                popupTemplate: { title, content: `Latitude: ${latitude}<br>Longitude: ${longitude}` }
+            });
+
+            view.graphics.removeAll(); // Clear old markers
+            view.graphics.add(marker); // Add new marker
+            view.popup.open({ features: [marker], location: marker.geometry });
+        }
+
+    // 4. Widget - Create the Home widget
+    var homeWidget = new Home ({ view: view }); // attach it to map view
+    view.ui.add(homeWidget,{position: "top-right", index: 3}); // Ensure it's below the My Location button
+
+    // 5. Widget - Full Screen
+    var fullscreenWidget = new Fullscreen ({view: view});
+    // view.ui.add(fullscreenWidget, "manual"); // Prevent auto UI placement
+    view.ui.add(fullscreenWidget, {position: "top-right", index: 5});
+
+    // 6. Widget - Coordinate Cursor
+    var coordsWidget = new CoordinateConversion ({ view: view});
+    view.ui.add(coordsWidget, {position: "bottom-right"});
+
+    // 7. Widget - Distance & Area Measurement
+    var measurementWidget = new Measurement({ view: view });
+    view.ui.add(measurementWidget, "manual");
+
+    view.when(() => {
+        let measurementBox = document.getElementById("measurementTools");
+        measurementBox.appendChild(measurementWidget.container);
+    });
+
+        // 1️⃣ Get the Button Container inside Measurement Tools
+        let buttonContainer = document.getElementById("buttonContainer");
+
+        // 2️⃣ Create Distance Measurement Button
+        var distanceButton = document.createElement("button");
+        distanceButton.classList.add("esri-widget", "esri-widget--button", "esri-interactive");
+
+        // ✅ Set Distance Button Image
+        distanceButton.style.backgroundImage = "url('images/ruler.png')"; // Update with your correct image path
+        distanceButton.style.backgroundSize = "cover";
+        distanceButton.style.width = "30px"; // Adjust size
+        distanceButton.style.height = "30px";
+        distanceButton.style.border = "none";
+
+        // 3️⃣ Create Area Measurement Button
+        var areaButton = document.createElement("button");
+        areaButton.classList.add("esri-widget", "esri-widget--button", "esri-interactive");
+
+        // ✅ Set Area Button Image
+        areaButton.style.backgroundImage = "url('images/area.png')"; // Update with your correct image path
+        areaButton.style.backgroundSize = "cover";
+        areaButton.style.width = "30px"; // Adjust size
+        areaButton.style.height = "30px";
+        areaButton.style.border = "none";
+
+        // 4️⃣ Reset & Start Distance Measurement
+        distanceButton.addEventListener("click", function () {
+            measurementWidget.clear(); // ✅ Clear previous measurement
+            setTimeout(() => { 
+                measurementWidget.activeTool = "distance"; // ✅ Start distance measurement after clearing
+            }, 100); // ✅ Small delay to ensure tool resets correctly
+        });
+
+        // 5️⃣ Reset & Start Area Measurement
+        areaButton.addEventListener("click", function () {
+            measurementWidget.clear(); // ✅ Clear previous measurement
+            setTimeout(() => { 
+                measurementWidget.activeTool = "area"; // ✅ Start area measurement after clearing
+            }, 100); // ✅ Small delay to ensure tool resets correctly
+        });
+
+        // 6️⃣ Add Buttons Inside Measurement Tools Box
+        buttonContainer.appendChild(distanceButton);
+        buttonContainer.appendChild(areaButton);
+
+        // 7️⃣ Stop Measurement When Pressing "ESC"
+        view.when(() => {
+            view.on("key-down", function (event) {
+                if (event.key === "Escape") {
+                    measurementWidget.clear(); // ✅ Clear measurement
+                    measurementWidget.activeTool = null; // ✅ Deactivate tool
+                }
+            });
+
+            measurementWidget.watch("activeTool", function (newValue) {
+                if (!newValue) {
+                    measurementWidget.clear(); // ✅ Ensure tool resets properly
+                }
+            });
+        });
+
+        // 8. Text Hover
+        distanceButton.setAttribute("title", "Measure Distance");
+        areaButton.setAttribute("title", "Measure Area");
+
+
+
+    // Legend - Legend widget with both Layers inside #legendDiv
+    // var legend = new Legend({
+    //     view: view,
+    //     container: "legendDiv",
+    //     layerInfos: [
+    //         { layer: featureLayer1, title: "PDRB Jawa Barat" },  // ✅ PDRB Jawa Barat is now above
+    //         { layer: featureLayer2, title: "Boundary Jawa Barat" }
+    //     ]
+    // });
+
+    // Legend - Show/Hide Legend Based on Layer Visibility
+    // function updateLegendVisibility() {
+    //     if (featureLayer1.visible || featureLayer2.visible) {
+    //         document.getElementById("legendContainer").style.display = "block";
+    //     } else {
+    //         document.getElementById("legendContainer").style.display = "none";
+    //     }
+    // }
+
+    // Legend - Ensure legend is only shown if at least one layer is visible
+    // updateLegendVisibility(); 
+
+    // ✅ 5️⃣ Initialize Legend Widget (Initially Empty)
+    var legend = new Legend({
+        view: view,
+        container: "legendDiv",
+        layerInfos: [] // ✅ Empty initially, will be updated dynamically
+    });
+
+    // ✅ 6️⃣ Function to Update Legend When Year Changes or Layers Toggle
+    function updateLegend() {
+        let selectedYear = document.getElementById("yearSlider").value; // ✅ Get selected year
+        let isChecked = document.getElementById("toggleLayer1").checked; // ✅ Check if PDRB is toggled ON
+        let boundaryChecked = document.getElementById("toggleLayer2").checked; // ✅ Check if boundary layer is ON
+
+        // ✅ Update legend dynamically with the selected year's layer
+        legend.layerInfos = [
+            ...(boundaryChecked ? [{ layer: featureLayer2, title: "Boundary Jawa Barat" }] : []), // ✅ Keep boundary if checked
+            ...(isChecked ? [{ layer: pdrbLayers[selectedYear], title: `PDRB Jawa Barat ${selectedYear}` }] : []) // ✅ Show only active PDRB layer
+    ];
+        
+        // ✅ Show or hide legend based on visibility of layers
+        document.getElementById("legendContainer").style.display = (isChecked || boundaryChecked) ? "block" : "none";
+    }
+
+    // ✅ 7️⃣ Ensure Legend Updates When the Slider Moves
+    document.getElementById("yearSlider").addEventListener("input", updateLegend);
+
+    // ✅ 8️⃣ Ensure Legend Updates When PDRB Visibility Toggles
+    document.getElementById("toggleLayer1").addEventListener("change", updateLegend);
+
+    // ✅ 9️⃣ Ensure Legend Updates When Boundary Layer Toggles
+    document.getElementById("toggleLayer2").addEventListener("change", updateLegend);
+
+    // ✅ 🔟 Initial Legend Update (Set Default State)
+    updateLegend();
+
+
+    // Basemap - Switcher (Thumbnails)
+    document.querySelectorAll(".basemapOption").forEach(option => {
+        option.addEventListener("click", function() {
+            // Change the basemap
+            var selectedBasemap = this.getAttribute("data-basemap");
+            map.basemap = selectedBasemap;
+
+            // Remove highlight from all, then highlight selected
+            document.querySelectorAll(".basemapOption").forEach(el => el.classList.remove("selected"));
+            this.classList.add("selected");
+        });
+    });
+    
+    });
+
+    // Toggle Sidebar - JavaScript for sidebar toggle functionality
+    const sidebar = document.getElementById("sidebar");
+    const toggleButton = document.getElementById("toggleSidebar");
+
+    toggleButton.addEventListener("click", function () {
+        sidebar.classList.toggle("hidden"); // Toggle sidebar visibility
+
+        if (sidebar.classList.contains("hidden")) {
+            toggleButton.style.left = "15px"; // Moves button outside
+            toggleButton.innerHTML = `
+                <svg viewBox="0 0 24 24">
+                    <path d="M8.59 16.58L13.17 12l-4.58-4.58L10 6l6 6-6 6z"/>
+                </svg>`; // Change to right arrow (▶)
+        } else {
+            toggleButton.style.left = "280px"; // Moves button back inside
+            toggleButton.innerHTML = `
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.41 16.58L10.83 12l4.58-4.58L14 6l-6 6 6 6z"/>
+                </svg>`; // Change back to left arrow (◀)
+        }
+        });
+
+    // Toggle Measurement - JavaScript for measurement toggle functionality
+    const measurementBox = document.getElementById("measurementTools");
+    const toggleMeasurementButton = document.getElementById("toggleMeasurement");
+
+    // ✅ Function to update the button state based on visibility
+    function updateToggleButton() {
+        if (measurementBox.classList.contains("hidden")) {
+            toggleMeasurementButton.style.left = "15px"; // Move button outside when hidden
+            toggleMeasurementButton.innerHTML = `
+                <svg viewBox="0 0 24 24">
+                    <path d="M8.59 16.58L13.17 12l-4.58-4.58L10 6l6 6-6 6z"/>
+                </svg>`; // Right arrow (▶)
+        } else {
+            toggleMeasurementButton.style.left = "280px"; // ✅ Move button back inside when shown
+            toggleMeasurementButton.innerHTML = `
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.41 16.58L10.83 12l4.58-4.58L14 6l-6 6 6 6z"/>
+                </svg>`; // Left arrow (◀)
+        }
+    }
+
+    // ✅ Run on page load to set correct button position & arrow
+    document.addEventListener("DOMContentLoaded", updateToggleButton);
+
+    // ✅ Toggle function when clicking the button
+    toggleMeasurementButton.addEventListener("click", function () {
+        measurementBox.classList.toggle("hidden"); // Toggle measurement tools visibility
+        updateToggleButton(); // ✅ Ensure the button moves correctly
+    });
+
+
+    // Print Map - JavaScript for Print Map Button
+    // document.getElementById("printMapBtn").addEventListener("click", function () {
+    //     window.print(); // Opens the browser's print dialog
+    // });
+
+    // ✅ Print Map - JavaScript for Print Map Button
+    document.getElementById("printMapBtn").addEventListener("click", function () {
+        console.log("Print button clicked"); // ✅ Debugging
+
+        // ✅ Check if watermark already exists, if not, create it
+        let existingWatermark = document.querySelector(".watermark");
+        if (!existingWatermark) {
+            let watermark = document.createElement("div");
+            watermark.classList.add("watermark");
+            watermark.innerText = "Property of Geo Science";
+
+            // ✅ Attach the watermark inside the map container (not body)
+            document.getElementById("viewDiv").appendChild(watermark);
+        }
+
+        // ✅ Convert basemap backgrounds into images for print
+        document.querySelectorAll(".basemapOption").forEach(option => {
+            let imgUrl = option.style.backgroundImage.replace(/url\(["']?([^"']*)["']?\)/, '$1'); // Extract URL
+            
+            // ✅ Prevent duplicate images
+            if (!option.querySelector(".printableBasemap")) {
+                let imgElement = document.createElement("img");
+                imgElement.src = imgUrl;
+                imgElement.classList.add("printableBasemap");
+                imgElement.style.width = "40px";
+                imgElement.style.height = "40px";
+                imgElement.style.display = "block";
+                option.appendChild(imgElement); 
+            }
+        });
+
+        // ✅ Delay print slightly to allow rendering
+        setTimeout(() => {
+            window.print();
+            
+            // ✅ Clean up after print (remove added images and watermark)
+            document.querySelectorAll(".printableBasemap").forEach(img => img.remove());
+
+            let watermark = document.querySelector(".watermark");
+            if (watermark) watermark.remove(); // ✅ Fix: Remove watermark only if it exists
+
+        }, 500);
+    });
+    
+    </script>
+
+</body>
+</html>
