@@ -521,29 +521,48 @@
         display: none !important; /* ✅ This will hide the button only in print mode */
         }
 
-        /* Adjust Sidebar and Measurement Tools for Small Screens */
+        /* Responsive Fix for Sidebar, Measurement Tools, and Legend */
         @media screen and (max-width: 768px) {
             #sidebar {
-                width: 90%; /* Take most of the screen width */
+                width: 90%; /* Make it wider on mobile */
                 left: 50%;
+                top: 15px; /* Move it higher */
                 transform: translateX(-50%);
                 z-index: 200; /* Ensure sidebar is above other elements */
             }
         
             #measurementTools {
-                bottom: 80px; /* Move it up slightly */
+                bottom: 120px; /* Move it up more */
                 left: 50%;
                 transform: translateX(-50%);
-                z-index: 150; /* Keep below sidebar */
+                z-index: 150; /* Keep it below sidebar */
             }
         
-            #toggleSidebar,
-            #toggleMeasurement {
-                left: auto;
-                right: 10px; /* Move toggle buttons to the right */
+            #legendContainer {
+                bottom: 10px; /* Move it lower */
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 120; /* Keep it below sidebar & measurement tools */
             }
         }
+
+        /* Fix toggle button positioning for mobile */
+        @media screen and (max-width: 768px) {
+            #toggleSidebar {
+                top: 15px; /* Move it slightly down */
+                left: auto; /* Remove centering */
+                right: 5px; /* Position it near the right edge of the sidebar */
+                z-index: 250; /* Ensure it is on top */
+            }
         
+            #toggleMeasurement {
+                top: 15px; /* Move it above measurement tools */
+                left: auto; /* Remove centering */
+                right: 5px; /* Position it near the right edge of the measurement tools */
+                z-index: 200; /* Keep it above other elements */
+            }
+        }
+            
     }
 
         </style>
